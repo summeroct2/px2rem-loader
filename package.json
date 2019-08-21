@@ -1,7 +1,7 @@
 {
-  "name": "@summer/rpx2rem-loader",
-  "version": "1.0.3",
-  "description": "rpx、px转换rem",
+  "name": "@smr/px2rem-loader",
+  "version": "1.0.0",
+  "description": "支持px、rpx转换rem",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
