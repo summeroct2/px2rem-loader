@@ -1,8 +1,3 @@
 # px2rem-loader
 
-支持 px、rpx 转换rem。
-
-## Install
-```
-npm i @summer/px2rem-loader
-```
+webpack loader，px转换rem，可自定义单位，支持同时使用px、rem。
