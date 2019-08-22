@@ -1,26 +1,52 @@
-var loaderUtils = require("loader-utils");
+const { getOptions } = require('loader-utils')
+const css = require('css')
 
-module.exports = function (source, sourceMap) {
-  const defOptions = {
-    base: 75,
-    suffix: 'rpx',
-  }
-  const loaderOptions = !!this.query ? loaderUtils.parseQuery(this.query) : {}
+const defaultOpts = {
+  base: 75,       // 设计稿宽度的1/10
+  suffix: 'rpx',  // 要转换为rem的单位
+}
 
-  const options = Object.assign({}, defOptions, loaderOptions)
-  const regexp = new RegExp(`(\\d+(\\.\\d+)?)${options.suffix}`, 'g')
-
-  // 正则查找替换
-  // TODO: 将 css 转换为 AST (抽象语法树, Abstract Syntax Tree)，再遍历查找替换
+function remParser(astRules, opts) {
   const replacer = (match, pn, offset, str) => {
-    // pn: rpx => rem
-    const rem = pn / options.base
+    const rem = pn / opts.base
     return `${parseFloat(rem.toFixed(5))}rem`
   }
 
-  source = source.replace(regexp, replacer)
-  return source
+  const suffixRegExp = new RegExp(`(\\d+(\\.\\d+)?)${opts.suffix}`)
+
+  for (let i = 0; i < astRules.length; i++) {
+    const rule = astRules[i]
+
+    // 处理 rule 和 at-rule: media,keyframes
+    if (rule.type === 'media') {
+      remParser(rule.rules, opts)
+      continue
+    } else if (rule.type === 'keyframes') {
+      remParser(rule.keyframes, opts)
+      continue
+    } else if (rule.type !== 'rule') {
+      continue
+    }
+    
+    for (let j = 0; j < rule.declarations.length; j++) {
+      const declaration = rule.declarations[j]
+      const declarationVal = declaration.value
+      if (declaration.type === 'declaration' && declarationVal.indexOf(opts.suffix)) {
+        declaration.value = declarationVal.replace(suffixRegExp, replacer)
+      }
+    }
+  }
+
+  return astRules
 }
 
+module.exports = function (source, sourceMap) {
+  const cssAST = css.parse(source)
+  
+  const queryOpts = getOptions(this)
+  const options = Object.assign({}, defaultOpts, queryOpts)
+  
+  remParser(cssAST.stylesheet.rules, options)
 
-
+  return css.stringify(cssAST)
+}
